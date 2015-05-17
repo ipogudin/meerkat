@@ -1,0 +1,14 @@
+#leiningen temporary files
+/target
+/classes
+/checkouts
+pom.xml
+pom.xml.asc
+*.jar
+*.class
+/.lein-*
+/.nrepl-port
+#eclipse temporary files
+.classpath
+.project
+.settings
