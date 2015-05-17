@@ -1,4 +1,4 @@
-#leiningen temporary files
+#einingen temporary files
 /target
 /classes
 /checkouts
@@ -9,6 +9,7 @@ pom.xml.asc
 /.lein-*
 /.nrepl-port
 #eclipse temporary files
+/bin
 .classpath
 .project
 .settings
