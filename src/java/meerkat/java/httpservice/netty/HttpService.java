@@ -7,6 +7,8 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.logging.LogLevel;
+import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import clojure.lang.APersistentMap;
@@ -57,7 +59,7 @@ public final class HttpService implements RequestHandlingContext {
         b.option(ChannelOption.SO_BACKLOG, backlog);
         b.group(acceptorGroup, workerGroup)
          .channel(NioServerSocketChannel.class)
-         //.handler(new LoggingHandler(LogLevel.INFO))
+         .handler(new LoggingHandler(LogLevel.DEBUG))
          .childHandler(new HttpServiceInitializer(Configurator.build(RequestFactory.build(), this, sslContext)));
 
         channel = b.bind(port).sync().channel();

@@ -89,6 +89,10 @@ public class Response {
     channelHandlerContext.flush();
   }
 
+  public synchronized void complete() {
+    headersWritten = false;
+  }
+
   public void close() {
     channelHandlerContext.close();
   }

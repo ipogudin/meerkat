@@ -3,53 +3,48 @@
   (:import (meerkat.java.httpservice.netty HttpService)))
 
 (defn- process-keep-alive-headers
-  [request response]
-  (cond
-    (=
-      "keep-alive"
-      (str/lower-case (or (:connection (:headers request)) "")))
-    (merge 
-      response 
-      {
-       :headers (merge (:headers response) {:connection "keep-alive" :keep-alive "timeout=60"})
-       :close #()
-       })
-    :else
-      (merge 
-        response 
-        {
-         :headers (assoc (:headers response) :connection "close")
-         })))
+  [context]
+  (let [
+        response (:response context)
+        connection-header (str/lower-case (or (get-in context [:request :headers :connection]) ""))]
+    (cond
+      (= "keep-alive" connection-header)
+      (-> context
+        (assoc-in [:response :headers :connection] "keep-alive")
+        (assoc-in [:response :headers :keep-alive] "timeout=60")
+        (assoc :complete (fn []
+                           ((:complete context))
+                           ((:close context)))))
+      :else
+      (-> context
+        (assoc-in [:response :headers :connection] "close")))))
 
 (defn keep-alive-provider
   [router]
-  (fn [request response]
+  (fn [context]
     (router
-      request
-      (merge
-        response
-        {
-         :write-and-flush (fn [r] ((:write-and-flush response) (process-keep-alive-headers request r)))
-         :write (fn [r] ((:write response) (process-keep-alive-headers request r)))
-         }))))
+      (process-keep-alive-headers context))))
 
 (defn- wrap-router
   [router]
   (fn [request internal-response]
     (router 
-      request 
       {
-       :write-and-flush (fn [response] 
-                          (.write internal-response response)
+       :request request
+       :write-and-flush (fn [context] 
+                          (.write internal-response (:response context))
                           (.flush internal-response))
-       :write #(.write internal-response %)
+       :write (fn [context] (.write internal-response (:response context)))
        :flush #(.flush internal-response)
+       :complete #(.complete internal-response)
        :close #(.close internal-response)
       })))
 
 (defn set-router
   [service router]
-  (.setRouter service (wrap-router (keep-alive-provider router))))
+  (.setRouter service 
+    (wrap-router 
+      (keep-alive-provider router))))
 
 (defn stop
   "Stop "
@@ -70,29 +65,31 @@
               } configuration))
     (set-router 
         (fn
-          [request, response]
-          (case (:method request)
+          [context]
+          (case (get-in context [:request :method])
             :GET (
-                   (:write-and-flush response)
+                   (:write-and-flush context)
                    (let [response-body (.getBytes "Hello world, from meerkat!" "UTF-8")]
-                     {
-                      :body response-body
-                      :headers {:content-type "text/plain" :content-length (count response-body)}
-                      :status 200}))
+                     (-> context
+                       (assoc-in [:response :body] response-body)
+                       (assoc-in [:response :headers :content-type] "text/plain")
+                       (assoc-in [:response :headers :content-length] (count response-body))
+                       (assoc-in [:response :status] 200))))
             :POST (
-                    (:write-and-flush response)
-                    (let [response-body (:body request)]
-                      {
-                       :body response-body
-                       :headers {:content-type "text/plain" :content-length (count response-body)}
-                       :status 200}))
+                    (:write-and-flush context)
+                    (let [response-body (get-in context [:request :body])]
+                      (-> context
+                       (assoc-in [:response :body] response-body)
+                       (assoc-in [:response :headers :content-type] "text/plain")
+                       (assoc-in [:response :headers :content-length] (count response-body))
+                       (assoc-in [:response :status] 200))))
             (
-              (:write-and-flush response) 
+              (:write-and-flush context) 
               (let [response-body (.getBytes "Method not found" "UTF-8")]
-                {
-                 :body response-body
-                 :headers {:content-type "text/plain" :content-length (count response-body)}
-                 :status 200})))
-          ((:close response))
-          ))
+                (-> context
+                       (assoc-in [:response :body] response-body)
+                       (assoc-in [:response :headers :content-type] "text/plain")
+                       (assoc-in [:response :headers :content-length] (count response-body))
+                       (assoc-in [:response :status] 200)))))
+          ((:complete context))))
     (.start)))
