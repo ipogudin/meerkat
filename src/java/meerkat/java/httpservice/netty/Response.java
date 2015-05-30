@@ -6,8 +6,10 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.http.DefaultHttpResponse;
+import io.netty.handler.codec.http.DefaultLastHttpContent;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 
@@ -81,7 +83,6 @@ public class Response {
         e.printStackTrace();
       }
     }
-    
     channelHandlerContext.write(bodyBuffer);
   }
 
@@ -91,6 +92,7 @@ public class Response {
 
   public synchronized void complete() {
     headersWritten = false;
+    channelHandlerContext.write(LastHttpContent.EMPTY_LAST_CONTENT);
   }
 
   public void close() {

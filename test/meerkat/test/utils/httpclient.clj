@@ -6,7 +6,7 @@
            [org.apache.http.client.methods HttpPost]
            [org.apache.http.entity ByteArrayEntity]))
 
-(defn extract-client
+(defn- extract-client
   [client]
   (:http-client (meta client)))
 
@@ -22,15 +22,26 @@
    :headers (transform-headers response)
    :body (-> response .getEntity org.apache.http.util.EntityUtils/toByteArray)})
 
+(defn- set-headers
+  [^org.apache.http.client.methods.HttpUriRequest uriRequest headers]
+  (doseq [entry headers] (.addHeader uriRequest (name (key entry)) (val entry)))
+  uriRequest)
+  
+
 (defn get
-  [client url]
+  "Performs HTTP GET request to url with provided headers"
+  [client url headers]
   (let [response (.execute
                   (extract-client client)
-                  (org.apache.http.client.methods.HttpGet. url))]
+                  (doto
+                    (org.apache.http.client.methods.HttpGet. url)
+                    (set-headers headers)))]
       (transform-response response)))
 
 (defn post
-  [client url body content-type]
+  [client url body headers]
+  "Performs HTTP POST request to url with provided body and headers
+   headers must at least contain :content-type"
   (let [response (.execute
                   (extract-client client)
                   (doto
@@ -38,7 +49,8 @@
                     (.setEntity 
                       (org.apache.http.entity.ByteArrayEntity. 
                         body 
-                        (org.apache.http.entity.ContentType/parse content-type)))))]
+                        (org.apache.http.entity.ContentType/parse (:content-type headers))))
+                    (set-headers headers)))]
       (transform-response response)))
 
 (defn start

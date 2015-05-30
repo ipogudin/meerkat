@@ -20,12 +20,13 @@
 
 (deftest get-method-test
   (testing "Mock get request to service"
-    (is (= 200 (:code (test-http-client/get http-client-instance "http://localhost:25643/"))))))
+    (let [response (test-http-client/get http-client-instance "http://localhost:25643/" {})]
+    (is (= 200 (:code response))))))
 
 (deftest post-method-test
   (testing "Mock post request to service"
     (let [
           body (.getBytes "body-body-body")
-          response (test-http-client/post http-client-instance "http://localhost:25643/" body "text/plain; charset=UTF-8")]
+          response (test-http-client/post http-client-instance "http://localhost:25643/" body {:content-type "text/plain; charset=UTF-8"})]
     (is (= 200 (:code response)))
     (is (= (seq body) (seq (:body response)))))))
