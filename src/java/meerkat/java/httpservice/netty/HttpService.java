@@ -35,7 +35,7 @@ public final class HttpService implements RequestHandlingContext {
 
     public HttpService(APersistentMap configuration) {
       ssl = (boolean) configuration.get(SSL);
-      port = ((Long) configuration.get(PORT)).intValue();
+      port = ((Number) configuration.get(PORT)).intValue();
       acceptorPoolSize = getIntValue(configuration, ACCEPTOR_POOL_SIZE);
       workerPoolSize = getIntValue(configuration, WORKER_POOL_SIZE);
       backlog = getIntValue(configuration, BACKLOG);

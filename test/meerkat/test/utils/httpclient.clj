@@ -26,7 +26,12 @@
   [^org.apache.http.client.methods.HttpUriRequest uriRequest headers]
   (doseq [entry headers] (.addHeader uriRequest (name (key entry)) (val entry)))
   uriRequest)
-  
+
+(defn get-available-port []
+  (.getLocalPort 
+    (doto 
+      (java.net.ServerSocket. 0)
+      (.close))))
 
 (defn get
   "Performs HTTP GET request to url with provided headers"
