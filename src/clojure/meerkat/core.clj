@@ -1,7 +1,17 @@
 (ns meerkat.core
-  (:require [meerkat.httpservice.netty :as httpservice]))
+  (:require [meerkat.httpservice.netty :as httpservice]
+            [meerkat.httpservice.default-handler :as handlers]
+            [meerkat.httpservice.routing :as routing]))
 
-(defn run-http-service [timeout]
+(defn configure-routing []
+  (->
+    (routing/register-default-handler handlers/default-handler)
+    (routing/build-router)))
+
+(defn start-http-service []
   (let [service (httpservice/start {})]
-    (java.lang.Thread/sleep timeout)
-    (httpservice/stop service)))
+    (httpservice/set-router service (configure-routing))
+    service))
+
+(defn stop-http-service [service]
+  (httpservice/stop service))
