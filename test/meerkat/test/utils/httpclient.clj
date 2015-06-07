@@ -33,7 +33,7 @@
       (java.net.ServerSocket. 0)
       (.close))))
 
-(defn get
+(defn GET
   "Performs HTTP GET request to url with provided headers"
   [client url headers]
   (let [response (.execute
@@ -43,7 +43,7 @@
                     (set-headers headers)))]
       (transform-response response)))
 
-(defn post
+(defn POST
   [client url body headers]
   "Performs HTTP POST request to url with provided body and headers
    headers must at least contain :content-type"

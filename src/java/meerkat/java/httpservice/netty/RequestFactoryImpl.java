@@ -75,8 +75,8 @@ public class RequestFactoryImpl implements RequestFactory {
         } else {
             transformedRequest.put(BODY, httpRequest.content().copy().array());
         }
-        transformedRequest.put(PARAMETERS, PersistentHashMap.create(parameters));
     }
+    transformedRequest.put(PARAMETERS, PersistentHashMap.create(parameters));
     return PersistentHashMap.create(transformedRequest);
   }
 }
