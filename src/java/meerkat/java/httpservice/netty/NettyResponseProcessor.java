@@ -2,7 +2,7 @@ package meerkat.java.httpservice.netty;
 
 import clojure.lang.APersistentMap;
 
-public interface NettyResponse {
+public interface NettyResponseProcessor {
 
   void write(APersistentMap response);
 

@@ -4,8 +4,7 @@ import io.netty.handler.ssl.SslContext;
 
 public interface Configurator {
 
-  RequestFactory requestFactory();
-  ResponseFactory responseFactory();
+  ContextFactory contextFactory();
   RequestHandlingContext requestHandlingContext();
   SslContext sslContext();
 

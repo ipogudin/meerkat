@@ -63,8 +63,7 @@ public final class HttpService implements RequestHandlingContext {
          .childHandler(
              new HttpServiceInitializer(
                  new ConfiguratorImpl(
-                     new RequestFactoryImpl(),
-                     new ResponseFactoryImpl(),
+                     new ContextFactoryImpl(),
                      this,
                      sslContext)));
 

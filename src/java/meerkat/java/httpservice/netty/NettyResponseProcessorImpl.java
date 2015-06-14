@@ -18,7 +18,7 @@ import meerkat.java.utils.APersistentMapUtils;
 import clojure.lang.APersistentMap;
 import clojure.lang.Keyword;
 
-public class NettyResponseImpl implements NettyResponse {
+public class NettyResponseProcessorImpl implements NettyResponseProcessor {
 
   private static final Keyword BODY = Keyword.intern("body");
   private static final Keyword HEADERS = Keyword.intern("headers");
@@ -28,7 +28,7 @@ public class NettyResponseImpl implements NettyResponse {
   private final ChannelPromise promise;
   private volatile boolean headersWritten;
 
-  public NettyResponseImpl(ChannelHandlerContext channelHandlerContext) {
+  public NettyResponseProcessorImpl(ChannelHandlerContext channelHandlerContext) {
     this.channelHandlerContext = channelHandlerContext;
     promise = this.channelHandlerContext.newPromise();
     promise.addListener(new GenericFutureListener<Future<? super Void>>() {

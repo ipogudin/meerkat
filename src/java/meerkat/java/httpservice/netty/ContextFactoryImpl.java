@@ -1,5 +1,6 @@
 package meerkat.java.httpservice.netty;
 
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.QueryStringDecoder;
@@ -12,6 +13,9 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import meerkat.java.utils.APersistentMapUtils;
+import clojure.lang.AFn;
+import clojure.lang.APersistentMap;
 import clojure.lang.IPersistentMap;
 import clojure.lang.IPersistentVector;
 import clojure.lang.Keyword;
@@ -19,7 +23,7 @@ import clojure.lang.PersistentArrayMap;
 import clojure.lang.PersistentHashMap;
 import clojure.lang.PersistentVector;
 
-public class RequestFactoryImpl implements RequestFactory {
+public class ContextFactoryImpl implements ContextFactory {
 
   public static final String CONTENT_TYPE = "Content-Type";
   public static final String WWW_FORM_URLENCODED = "application/x-www-form-urlencoded";
@@ -30,8 +34,77 @@ public class RequestFactoryImpl implements RequestFactory {
   private static final Keyword PARAMETERS = Keyword.intern("parameters");
   private static final Keyword BODY = Keyword.intern("body");
 
+  private static final Keyword REQUEST = Keyword.intern("request");
+  private static final Keyword RESPONSE = Keyword.intern("response");
+
+  private static final Keyword WRITE = Keyword.intern("write");
+  private static final Keyword FLUSH = Keyword.intern("flush");
+  private static final Keyword WRITE_AND_FLUSH = Keyword.intern("write-and-flush");
+  private static final Keyword COMPLETE = Keyword.intern("complete");
+  private static final Keyword CLOSE = Keyword.intern("close");
+
   @Override
-  public IPersistentMap build(FullHttpRequest httpRequest) {
+  public IPersistentMap build(FullHttpRequest httpRequest,
+      ChannelHandlerContext channelHandlerContext) {
+    Map<Keyword, Object> context = new HashMap<>();
+    
+    context.put(REQUEST, buildRequest(httpRequest));
+    
+    final NettyResponseProcessor nettyResponseProcessor = new NettyResponseProcessorImpl(channelHandlerContext);
+    
+    context.put(
+        WRITE,
+        new AFn() {
+          @Override
+          public Object invoke(Object arg1) {
+            nettyResponseProcessor.write(
+                (APersistentMap) APersistentMapUtils.getValue((APersistentMap) arg1, RESPONSE));
+            return null;
+          }
+        });
+    context.put(
+        FLUSH,
+        new AFn() {
+          @Override
+          public Object invoke() {
+            nettyResponseProcessor.flush();
+            return null;
+          }
+        });
+    context.put(
+        WRITE_AND_FLUSH,
+        new AFn() {
+          @Override
+          public Object invoke(Object arg1) {
+            nettyResponseProcessor.write(
+                (APersistentMap) APersistentMapUtils.getValue((APersistentMap) arg1, RESPONSE));
+            nettyResponseProcessor.flush();
+            return null;
+          }
+        });
+    context.put(
+        COMPLETE,
+        new AFn() {
+          @Override
+          public Object invoke() {
+            nettyResponseProcessor.complete();
+            return null;
+          }
+        });
+    context.put(
+        CLOSE,
+        new AFn() {
+          @Override
+          public Object invoke() {
+            nettyResponseProcessor.close();
+            return null;
+          }
+        });
+    
+    return PersistentHashMap.create(context);
+  }
+
+  public IPersistentMap buildRequest(FullHttpRequest httpRequest) {
     Map<Keyword, Object> transformedRequest = new HashMap<>();
     transformedRequest.put(METHOD, Keyword.find(httpRequest.method().name()));
     
