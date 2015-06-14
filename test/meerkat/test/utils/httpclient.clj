@@ -4,7 +4,10 @@
            [org.apache.http.impl.client HttpClients]
            [org.apache.http.client.methods HttpGet]
            [org.apache.http.client.methods HttpPost]
-           [org.apache.http.entity ByteArrayEntity]))
+           [org.apache.http.entity ByteArrayEntity]
+           [org.apache.http.message BasicNameValuePair]
+           [org.apache.http.client.entity UrlEncodedFormEntity]
+           [org.apache.http.entity.mime MultipartEntityBuilder]))
 
 (defn- extract-client
   [client]
@@ -43,6 +46,35 @@
                     (set-headers headers)))]
       (transform-response response)))
 
+(defn byte-array-body [body content-type]
+  "Creates a body from byte array with content-type"
+  (org.apache.http.entity.ByteArrayEntity. 
+    body 
+    (org.apache.http.entity.ContentType/parse content-type)))
+
+(defn url-encoded-body [parameters]
+  "Encodes map of parameters into url encoded body
+   keys can be as string as keywords
+   values should be strings"
+  (org.apache.http.client.entity.UrlEncodedFormEntity.
+    (map 
+      (fn [[n v]] (org.apache.http.message.BasicNameValuePair. (name n) v))
+      parameters)))
+
+(defn- prepare-multipart-value [entity name {value :value content-type :content-type filename :filename}]
+  (.addBinaryBody 
+    entity 
+    name 
+    value 
+    (org.apache.http.entity.ContentType/parse content-type)
+    filename))
+
+(defn multipart-body [parameters]
+  (let [entity (org.apache.http.entity.mime.MultipartEntityBuilder/create)]
+    (doseq [[n v] parameters] (prepare-multipart-value entity (name n) v))
+    (.build entity)))
+
+
 (defn POST
   [client url body headers]
   "Performs HTTP POST request to url with provided body and headers
@@ -51,10 +83,7 @@
                   (extract-client client)
                   (doto
                     (org.apache.http.client.methods.HttpPost. url)
-                    (.setEntity 
-                      (org.apache.http.entity.ByteArrayEntity. 
-                        body 
-                        (org.apache.http.entity.ContentType/parse (:content-type headers))))
+                    (.setEntity body)
                     (set-headers headers)))]
       (transform-response response)))
 

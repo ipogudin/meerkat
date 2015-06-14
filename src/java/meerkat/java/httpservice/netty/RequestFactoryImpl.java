@@ -63,7 +63,12 @@ public class RequestFactoryImpl implements RequestFactory {
                         if (data.getHttpDataType() == HttpDataType.Attribute) {
                             Attribute attribute = (Attribute) data;
                             try {
-                                parameters.put(Keyword.intern(data.getName()), PersistentVector.create(attribute.getByteBuf().array()));
+                                parameters.put(
+                                    Keyword.intern(data.getName()), 
+                                    PersistentVector.create(
+                                        new String(
+                                            attribute.getByteBuf().array(), 
+                                            attribute.getCharset())));
                             } catch (IOException e) {
                                 
                             }

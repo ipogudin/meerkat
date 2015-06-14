@@ -5,13 +5,18 @@ import io.netty.handler.ssl.SslContext;
 public class ConfiguratorImpl implements Configurator {
 
   private final RequestFactory requestFactory;
+  private final ResponseFactory responseFactory;
   private final RequestHandlingContext requestHandlingContext;
   private final SslContext sslContext;
 
-  ConfiguratorImpl(RequestFactory requestFactory,
-      RequestHandlingContext requestHandlingContext, SslContext sslContext) {
+  ConfiguratorImpl(
+      RequestFactory requestFactory,
+      ResponseFactory responseFactory,
+      RequestHandlingContext requestHandlingContext, 
+      SslContext sslContext) {
     super();
     this.requestFactory = requestFactory;
+    this.responseFactory = responseFactory;
     this.requestHandlingContext = requestHandlingContext;
     this.sslContext = sslContext;
   }
@@ -19,6 +24,11 @@ public class ConfiguratorImpl implements Configurator {
   @Override
   public RequestFactory requestFactory() {
     return requestFactory;
+  }
+
+  @Override
+  public ResponseFactory responseFactory() {
+    return responseFactory;
   }
 
   @Override

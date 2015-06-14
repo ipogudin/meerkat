@@ -7,7 +7,4 @@ public interface RequestFactory {
 
   IPersistentMap build(FullHttpRequest httpRequest);
 
-  static RequestFactory build() {
-    return new RequestFactoryImpl();
-  }
 }

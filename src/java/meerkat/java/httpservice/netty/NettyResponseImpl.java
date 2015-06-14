@@ -6,7 +6,6 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.http.DefaultHttpResponse;
-import io.netty.handler.codec.http.DefaultLastHttpContent;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.LastHttpContent;
@@ -19,7 +18,7 @@ import meerkat.java.utils.APersistentMapUtils;
 import clojure.lang.APersistentMap;
 import clojure.lang.Keyword;
 
-public class Response {
+public class NettyResponseImpl implements NettyResponse {
 
   private static final Keyword BODY = Keyword.intern("body");
   private static final Keyword HEADERS = Keyword.intern("headers");
@@ -27,10 +26,9 @@ public class Response {
 
   private final ChannelHandlerContext channelHandlerContext;
   private final ChannelPromise promise;
-  private volatile Object context;
   private volatile boolean headersWritten;
 
-  public Response(ChannelHandlerContext channelHandlerContext) {
+  public NettyResponseImpl(ChannelHandlerContext channelHandlerContext) {
     this.channelHandlerContext = channelHandlerContext;
     promise = this.channelHandlerContext.newPromise();
     promise.addListener(new GenericFutureListener<Future<? super Void>>() {
@@ -42,16 +40,8 @@ public class Response {
     });
   }
 
-  public Object getContext() {
-    return context;
-  }
-
-  public void setContext(Object context) {
-    this.context = context;
-  }
-
   @SuppressWarnings("unchecked")
-  public void writeHeaders(APersistentMap response) {
+  protected void writeHeaders(APersistentMap response) {
     if (!headersWritten) {
       synchronized (this) {
         if (!headersWritten) {
@@ -67,6 +57,7 @@ public class Response {
     }
   }
 
+  @Override
   public void write(APersistentMap response) {
     writeHeaders(response);
 
@@ -86,15 +77,18 @@ public class Response {
     channelHandlerContext.write(bodyBuffer);
   }
 
+  @Override
   public void flush() {
     channelHandlerContext.flush();
   }
 
+  @Override
   public synchronized void complete() {
     headersWritten = false;
     channelHandlerContext.write(LastHttpContent.EMPTY_LAST_CONTENT);
   }
 
+  @Override
   public void close() {
     channelHandlerContext.close();
   }

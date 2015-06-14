@@ -60,7 +60,13 @@ public final class HttpService implements RequestHandlingContext {
         b.group(acceptorGroup, workerGroup)
          .channel(NioServerSocketChannel.class)
          .handler(new LoggingHandler(LogLevel.DEBUG))
-         .childHandler(new HttpServiceInitializer(Configurator.build(RequestFactory.build(), this, sslContext)));
+         .childHandler(
+             new HttpServiceInitializer(
+                 new ConfiguratorImpl(
+                     new RequestFactoryImpl(),
+                     new ResponseFactoryImpl(),
+                     this,
+                     sslContext)));
 
         channel = b.bind(port).sync().channel();
     }

@@ -26,7 +26,7 @@ public class HttpServiceHandler extends ChannelInboundHandlerAdapter {
 
             configurator.requestHandlingContext().router().invoke(
                 configurator.requestFactory().build(httpRequest),
-                new Response(context)
+                configurator.responseFactory().build(context)
                 );
 
           } finally {

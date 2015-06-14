@@ -66,9 +66,37 @@
           response (test-http-client/POST 
                      http-client-instance 
                      (format "http://localhost:%d/" port) 
-                     body 
-                     {:content-type "text/plain; charset=UTF-8"})
+                     (test-http-client/byte-array-body body "text/plain; charset=UTF-8")
+                     {})
           recorded-request (test-common/get-recorded)]
-    (is (= 200 (:code response)))
-    (is (= (seq body) (seq (:body recorded-request))))
-    (is (= 0 (count (:parameters recorded-request)))))))
+      (is (= 200 (:code response)))
+      (is (= (seq body) (seq (:body recorded-request))))
+      (is (= 0 (count (:parameters recorded-request))))))
+  (testing "POST request to service with url encoded"
+    (let [
+          parameters {:parameter1 "value1" :parameter2 "value2"}
+          response (test-http-client/POST 
+                     http-client-instance 
+                     (format "http://localhost:%d/" port) 
+                     (test-http-client/url-encoded-body parameters)
+                     {})
+          recorded-request (test-common/get-recorded)]
+      (is (= 200 (:code response)))
+      (is (= 2 (count (:parameters recorded-request))))
+      (is (= ["value1"] (get-in recorded-request [:parameters :parameter1])))
+      (is (= ["value2"] (get-in recorded-request [:parameters :parameter2])))))
+  (testing "POST request to service with multipart body containing text/plain fields"
+    (let [
+          parameters {
+                      :parameter1 {:value (.getBytes "value1") :content-type "text/plain; charset=UTF-8"} 
+                      :parameter2 {:value (.getBytes "value2") :content-type "text/plain; charset=UTF-8"}}
+          response (test-http-client/POST 
+                     http-client-instance 
+                     (format "http://localhost:%d/" port) 
+                     (test-http-client/multipart-body parameters)
+                     {})
+          recorded-request (test-common/get-recorded)]
+      (is (= 200 (:code response)))
+      (is (= 2 (count (:parameters recorded-request))))
+      (is (= ["value1"] (get-in recorded-request [:parameters :parameter1])))
+      (is (= ["value2"] (get-in recorded-request [:parameters :parameter2]))))))
