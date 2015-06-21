@@ -48,5 +48,10 @@
               :acceptor-pool-size 8
               :worker-pool-size 8
               :backlog 1024
+              :read-timeout 10000
+              :write-timeout 10000
+              :max-initial-line-length 4096
+              :max-header-size 8192
+              :max-chunk-size 8192
               } configuration))
     (.start)))

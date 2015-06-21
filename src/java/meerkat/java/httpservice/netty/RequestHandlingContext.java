@@ -4,6 +4,7 @@ import clojure.lang.IFn;
 
 public interface RequestHandlingContext {
 
-  public IFn router();
+  IFn router();
 
+  void setRouter(IFn router);
 }
