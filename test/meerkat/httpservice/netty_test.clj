@@ -52,51 +52,67 @@
   (testing "GET request with url encoded parameters to service"
     (let [response (test-http-client/GET 
                      http-client-instance 
-                     (format "http://localhost:%d/?parameter1=val1&parameter2=val2%%26+" port) {})
+                     (format "http://localhost:%d/?parameter1=value1&parameter2=value2%%26+" port) {})
           recorded-request (test-common/get-recorded)]
     (is (= 200 (:code response)))
     (is (= 2 (count (:parameters recorded-request))))
-    (is (= ["val1"] (get-in recorded-request [:parameters :parameter1])))
-    (is (= ["val2& "] (get-in recorded-request [:parameters :parameter2]))))))
+    (is (= ["value1"] (get-in recorded-request [:parameters :parameter1])))
+    (is (= ["value2& "] (get-in recorded-request [:parameters :parameter2]))))))
+
+(defn- POST [url-pattern body body-validator parameters-validator]
+  (let [response (test-http-client/POST 
+                   http-client-instance 
+                   (format url-pattern port) 
+                   body
+                   {})
+        recorded-request (test-common/get-recorded)]
+    (is (= 200 (:code response)))
+    (body-validator (:body recorded-request))
+    (parameters-validator (:parameters recorded-request))))
 
 (deftest post-method-test
   (testing "POST request to service with text body"
-    (let [
-          body (.getBytes "body-body-body")
-          response (test-http-client/POST 
-                     http-client-instance 
-                     (format "http://localhost:%d/" port) 
-                     (test-http-client/byte-array-body body "text/plain; charset=UTF-8")
-                     {})
-          recorded-request (test-common/get-recorded)]
-      (is (= 200 (:code response)))
-      (is (= (seq body) (seq (:body recorded-request))))
-      (is (= 0 (count (:parameters recorded-request))))))
+    (let [body (.getBytes "body-body-body")]
+      (POST
+        "http://localhost:%d/"
+        (test-http-client/byte-array-body body "text/plain; charset=UTF-8")
+        (fn [recorded-body] 
+          (is (= (seq body) (seq recorded-body))))
+        (fn [recorded-parameters]
+          (is (= 0 (count recorded-parameters)))))))
   (testing "POST request to service with url encoded"
-    (let [
-          parameters {:parameter1 "value1" :parameter2 "value2"}
-          response (test-http-client/POST 
-                     http-client-instance 
-                     (format "http://localhost:%d/" port) 
-                     (test-http-client/url-encoded-body parameters)
-                     {})
-          recorded-request (test-common/get-recorded)]
-      (is (= 200 (:code response)))
-      (is (= 2 (count (:parameters recorded-request))))
-      (is (= ["value1"] (get-in recorded-request [:parameters :parameter1])))
-      (is (= ["value2"] (get-in recorded-request [:parameters :parameter2])))))
+    (POST
+      "http://localhost:%d/"
+      (test-http-client/url-encoded-body 
+        {:parameter1 "value1" :parameter2 "value2"})
+      (fn [_] )
+      (fn [recorded-parameters]
+        (is (= 2 (count recorded-parameters)))
+        (is (= ["value1"] (:parameter1 recorded-parameters)))
+        (is (= ["value2"] (:parameter2 recorded-parameters))))))
   (testing "POST request to service with multipart body containing text/plain fields"
-    (let [
-          parameters {
-                      :parameter1 {:value (.getBytes "value1") :content-type "text/plain; charset=UTF-8"} 
-                      :parameter2 {:value (.getBytes "value2") :content-type "text/plain; charset=UTF-8"}}
-          response (test-http-client/POST 
-                     http-client-instance 
-                     (format "http://localhost:%d/" port) 
-                     (test-http-client/multipart-body parameters)
-                     {})
-          recorded-request (test-common/get-recorded)]
-      (is (= 200 (:code response)))
-      (is (= 2 (count (:parameters recorded-request))))
-      (is (= ["value1"] (get-in recorded-request [:parameters :parameter1])))
-      (is (= ["value2"] (get-in recorded-request [:parameters :parameter2]))))))
+    (POST
+      "http://localhost:%d/"
+      (test-http-client/multipart-body 
+        {
+         :parameter1 {:value (.getBytes "value1") :content-type "text/plain; charset=UTF-8"} 
+         :parameter2 {:value (.getBytes "value2") :content-type "text/plain; charset=UTF-8"}})
+      (fn [_] )
+      (fn [recorded-parameters]
+        (is (= 2 (count recorded-parameters)))
+        (is (= ["value1"] (:parameter1 recorded-parameters)))
+        (is (= ["value2"] (:parameter2 recorded-parameters))))))
+  (testing "POST request to service with multipart body containing text/plain fields with url encoded parameters"
+    (POST
+      "http://localhost:%d/?parameter3=value3&parameter4=value4%%26+"
+      (test-http-client/multipart-body 
+        {
+         :parameter1 {:value (.getBytes "value1") :content-type "text/plain; charset=UTF-8"} 
+         :parameter2 {:value (.getBytes "value2") :content-type "text/plain; charset=UTF-8"}})
+      (fn [_] )
+      (fn [recorded-parameters]
+        (is (= 4 (count recorded-parameters)))
+        (is (= ["value1"] (:parameter1 recorded-parameters)))
+        (is (= ["value2"] (:parameter2 recorded-parameters)))
+        (is (= ["value3"] (:parameter3 recorded-parameters)))
+        (is (= ["value4& "] (:parameter4 recorded-parameters)))))))

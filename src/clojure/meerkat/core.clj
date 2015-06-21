@@ -15,3 +15,6 @@
 
 (defn stop-http-service [service]
   (httpservice/stop service))
+
+(defn -main [& args]
+  (start-http-service))
