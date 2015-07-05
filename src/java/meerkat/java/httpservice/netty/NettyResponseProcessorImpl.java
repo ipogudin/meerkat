@@ -13,6 +13,8 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 
 import java.io.UnsupportedEncodingException;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import meerkat.java.utils.APersistentMapUtils;
 import clojure.lang.APersistentMap;
@@ -50,7 +52,8 @@ public class NettyResponseProcessorImpl implements NettyResponseProcessor {
               new DefaultHttpResponse(HTTP_1_1, HttpResponseStatus.valueOf(status));
           APersistentMap headers = (APersistentMap)APersistentMapUtils.getValue(response, HEADERS);
           headers.forEach(
-              (header, value) -> httpResponse.headers().set(((Keyword)header).getName(), value));
+              (header, value) -> httpResponse.headers().set(
+                  upperCaseForFirstCharacters(((Keyword)header).getName()), value));
           channelHandlerContext.write(httpResponse);
         }
       }
@@ -91,5 +94,41 @@ public class NettyResponseProcessorImpl implements NettyResponseProcessor {
   @Override
   public void close() {
     channelHandlerContext.close();
+  }
+
+  private final static Map<String, String> UPPER_CASE_STRINGS_CACHE = new ConcurrentHashMap<>();
+  private final static int MAX_UPPER_CASE_STRINGS = 2048;
+  /**
+   * This method assumes that the set of unique strings are pretty small.
+   * @param s
+   * @return
+   */
+  public static String upperCaseForFirstCharacters(String s) {
+    String resultString = UPPER_CASE_STRINGS_CACHE.get(s);
+    if (resultString == null) {
+      synchronized (UPPER_CASE_STRINGS_CACHE) {
+        StringBuilder sb = new StringBuilder();
+        boolean upper = true;
+        for (int i = 0; i < s.length(); i++) {
+          char c = s.charAt(i);
+          
+          if (upper) {
+            c = Character.toUpperCase(c);
+            upper = false;
+          }
+          if (c == '-') {
+            upper = true;
+          }
+          sb.append(c);
+        }
+        resultString = sb.toString();
+        if (UPPER_CASE_STRINGS_CACHE.size() > MAX_UPPER_CASE_STRINGS) {
+          //cache overflow, full eviction.
+          UPPER_CASE_STRINGS_CACHE.clear();
+        }
+        UPPER_CASE_STRINGS_CACHE.put(s, resultString);
+      }
+    }
+    return resultString;
   }
 }
