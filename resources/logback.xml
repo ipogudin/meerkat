@@ -6,7 +6,7 @@
     </encoder>
   </appender>
 
-  <logger name="meerkat" level="INFO" additivity="false">
+  <logger name="meerkat" level="DEBUG" additivity="false">
    <appender-ref ref="STDOUT" />
   </logger>
 

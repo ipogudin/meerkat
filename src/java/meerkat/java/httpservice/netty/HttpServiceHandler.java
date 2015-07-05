@@ -29,7 +29,6 @@ public class HttpServiceHandler extends ChannelInboundHandlerAdapter {
             configurator.requestHandlingContext().router().invoke(
                 configurator.contextFactory().build(httpRequest, context)
                 );
-
           } finally {
             ReferenceCountUtil.release(msg);
           }
@@ -38,7 +37,6 @@ public class HttpServiceHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        cause.printStackTrace();
         ctx.close();
     }
 }

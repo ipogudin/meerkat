@@ -1,11 +1,12 @@
 (ns meerkat.httpservice.netty
-  (:require [clojure.string :as str])
+  (:require [clojure.string :as str]
+            [clojure.tools.logging :as log])
   (:import 
-    (meerkat.java.httpservice.netty HttpService)
-    (meerkat.java.httpservice.netty Response)))
+    (meerkat.java.httpservice.netty HttpService)))
 
 (defn- process-keep-alive-headers
   [context]
+  (log/trace "keep-alive processing")
   (let [
         response (:response context)
         connection-header (str/lower-case (or (get-in context [:request :headers :connection]) ""))]
@@ -35,23 +36,29 @@
 (defn stop
   "Stop "
   [service]
-  (.stop service))
+  (.stop service)
+  (log/info "http-service just stopped")
+  service)
 
 (defn start
   "Start "
   [configuration]
-  (doto 
-    (HttpService. 
-      (merge {
-              :ssl false
-              :port 8080
-              :acceptor-pool-size 8
-              :worker-pool-size 8
-              :backlog 1024
-              :read-timeout 10000
-              :write-timeout 10000
-              :max-initial-line-length 4096
-              :max-header-size 8192
-              :max-chunk-size 8192
-              } configuration))
-    (.start)))
+  (let 
+    [service
+      (doto 
+        (HttpService. 
+          (merge {
+                  :ssl false
+                  :port 8080
+                  :acceptor-pool-size 8
+                  :worker-pool-size 8
+                  :backlog 1024
+                  :read-timeout 10000
+                  :write-timeout 10000
+                  :max-initial-line-length 4096
+                  :max-header-size 8192
+                  :max-chunk-size 8192
+                  } configuration))
+        (.start))]
+    (log/info "http-service just started")
+    service))
