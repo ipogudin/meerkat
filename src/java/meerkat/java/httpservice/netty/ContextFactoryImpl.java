@@ -29,6 +29,7 @@ public class ContextFactoryImpl implements ContextFactory {
   public static final String WWW_FORM_URLENCODED = "application/x-www-form-urlencoded";
   public static final String MULTIPART = "multipart/form-data";
 
+  private static final Keyword PROTOCOL = Keyword.intern("protocol");
   private static final Keyword METHOD = Keyword.intern("method");
   private static final Keyword HEADERS = Keyword.intern("headers");
   private static final Keyword PARAMETERS = Keyword.intern("parameters");
@@ -36,6 +37,7 @@ public class ContextFactoryImpl implements ContextFactory {
 
   private static final Keyword REQUEST = Keyword.intern("request");
   private static final Keyword RESPONSE = Keyword.intern("response");
+  private static final Keyword CONNECTION_ID = Keyword.intern("connection-id");
 
   private static final Keyword WRITE = Keyword.intern("write");
   private static final Keyword FLUSH = Keyword.intern("flush");
@@ -49,6 +51,7 @@ public class ContextFactoryImpl implements ContextFactory {
     Map<Keyword, Object> context = new HashMap<>();
     
     context.put(REQUEST, buildRequest(httpRequest));
+    context.put(CONNECTION_ID, channelHandlerContext.channel().id().asShortText());
     
     final NettyResponseProcessor nettyResponseProcessor = new NettyResponseProcessorImpl(channelHandlerContext);
     
@@ -106,7 +109,8 @@ public class ContextFactoryImpl implements ContextFactory {
 
   public IPersistentMap buildRequest(FullHttpRequest httpRequest) {
     Map<Keyword, Object> transformedRequest = new HashMap<>();
-    transformedRequest.put(METHOD, Keyword.find(httpRequest.method().name()));
+    transformedRequest.put(PROTOCOL, httpRequest.protocolVersion().text());
+    transformedRequest.put(METHOD, Keyword.intern(httpRequest.method().name()));
     
     //transformation headers
     final Map<Keyword, String> headers = new HashMap<>();

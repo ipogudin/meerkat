@@ -1,5 +1,4 @@
 (ns meerkat.httpservice.netty-test
-  (:import [java.util Arrays])
   (:require [clojure.test :refer :all]
             [meerkat.test.utils.common :as test-common]
             [meerkat.httpservice.netty :as http-service]
