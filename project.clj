@@ -9,7 +9,7 @@
   :dependencies [[org.clojure/clojure "1.7.0"]
                  [org.clojure/tools.logging "0.3.1"]
                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]
-                 ;[slingshot "0.12.2"]
+                 [slingshot "0.12.2"]
                  [ch.qos.logback/logback-classic "1.1.3"]
                  [io.netty/netty-codec-http "4.1.0.Beta4"]
                  [io.netty/netty-handler "4.1.0.Beta4"]
