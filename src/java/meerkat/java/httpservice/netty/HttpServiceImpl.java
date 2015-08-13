@@ -11,7 +11,7 @@ import io.netty.handler.logging.LoggingHandler;
 import clojure.lang.APersistentMap;
 import clojure.lang.IFn;
 
-public final class HttpService {
+public final class HttpServiceImpl {
 
   private final ConfiguratorImpl configurator;
   
@@ -19,7 +19,7 @@ public final class HttpService {
   private volatile EventLoopGroup workerGroup;
   private volatile Channel channel;
 
-  public HttpService(APersistentMap configuration) {
+  public HttpServiceImpl(APersistentMap configuration) {
     configurator = new ConfiguratorImpl(configuration);
   }
 

@@ -15,7 +15,6 @@
                  [io.netty/netty-handler "4.1.0.Beta4"]
                  [org.apache.httpcomponents/httpclient "4.5"]
                  [org.apache.httpcomponents/httpmime "4.5"]
-                 [ch.qos.logback/logback-classic "1.1.3"]
                  [org.javassist/javassist "3.19.0-GA"]]
   :profiles {:performance-tests 
              {:main meerkat.core

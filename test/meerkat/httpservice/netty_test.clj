@@ -1,7 +1,9 @@
 (ns meerkat.httpservice.netty-test
   (:require [clojure.test :refer :all]
             [meerkat.test.utils.common :as test-common]
-            [meerkat.httpservice.netty :as http-service]
+            [meerkat.services :as services]
+            [meerkat.httpservice.core :as http-service]
+            [meerkat.httpservice.netty :as netty-http-service]
             [meerkat.test.utils.httpclient :as test-http-client]
             [meerkat.httpservice.default-handler :as handlers]
             [meerkat.httpservice.routing :as routing]))
@@ -14,7 +16,7 @@
 (defn http-service-fixture
   [f]
   (binding 
-    [http-service-instance (http-service/start {:port port})
+    [http-service-instance (services/start (netty-http-service/create-http-service "http-service" [] {:port port}))
      http-client-instance (test-http-client/start)]
     ;configuring routing and setting default handler
     (http-service/set-router 
@@ -35,7 +37,7 @@
     (try
       (f)
       (finally
-        (http-service/stop http-service-instance)
+        (services/stop http-service-instance)
         (test-http-client/stop http-client-instance)))))
 
 (use-fixtures :once http-service-fixture)
