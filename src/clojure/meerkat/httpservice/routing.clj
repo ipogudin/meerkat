@@ -1,15 +1,210 @@
-(ns meerkat.httpservice.routing)
+(ns meerkat.httpservice.routing
+  (:require [meerkat.common :as common]))
+
+(defrecord RouteNode [type path following parameters handler matched-value])
+
+(defn analyze-node-type
+  [path]
+  (cond
+    (keyword? path) :parameter
+    (instance? String path) :route-part))
+
+(defn create-route-node
+  ([path] (RouteNode. (analyze-node-type path) path [] nil nil nil))
+  ([path following] (RouteNode. (analyze-node-type path) path following nil nil nil)))
+
+(defn create-terminator 
+  [values handler]
+  (RouteNode. :terminator :terminator [] (filter keyword? values) handler nil))
+
+(defn parse-route
+  [route handler]
+  (let
+    [parsed-values
+    (loop [[c & others] (seq route) current-element "" type :route-part result []]
+      (if (nil? c)
+        (cond
+          (= type :route-part) (conj result current-element)
+          (= type :parameter) (conj result (keyword current-element)))
+        (cond
+          (= c \:) (recur others "" :parameter (conj result current-element))
+          (and (= type :parameter) (= c \/)) (recur others (str c) :route-part (conj result (keyword current-element)))
+          :else (recur others (str current-element c) type result))))]
+    (reduce 
+      (fn 
+        [previous path]
+        (let [root (create-route-node path)]
+          (assoc root :following [previous])))
+      (create-terminator parsed-values handler)
+      (vec (reverse parsed-values)))))
+
+(defn path-overlap
+  [s1 s2]
+  (loop [[c1 & seq1] (seq s1) [c2 & seq2] (seq s2) i 0]
+    (cond
+      (or (nil? c1) (nil? c2)) i
+      (not= c1 c2) i
+      :else (recur seq1 seq2 (inc i)))))
+
+(defn terminator?
+  [node]
+  (= :terminator (:type node)))
+
+(defn not-terminator?
+  [node]
+  (not (terminator? node)))
+
+(defn parameter?
+  [node]
+  (= :parameter (:type node)))
+
+(defn route-part?
+  [node]
+  (= :route-part (:type node)))
+
+(defn matched?
+  [node]
+  (some? (:matched-value node)))
+
+(defn identical-parameters?
+  "Do both nodes have identical wildcards."
+  [node1 node2]
+  (and (not-terminator? node1) (parameter? node1) (parameter? node2)))
+
+(defn mergeable?
+  "Can node1 be merged into node2."
+  [node1 node2]
+  (or
+    (identical-parameters? node1 node2)
+    (let [node1-path (:path node1)
+          node2-path (:path node2)]
+      (and
+        (instance? String node1-path)
+        (instance? String node2-path)
+        (.startsWith node1-path node2-path)))))
+
+(declare merge-node)
+
+(defn add-node
+  "add a node into vector or merge it with an appropriate node from a vector"
+  [nodes node]
+  (let [node-to-merge (first (filter (partial mergeable? node) nodes))]
+    (if (nil? node-to-merge)
+      (conj nodes node)
+      (conj (filterv #(not= node-to-merge %) nodes) (merge-node node-to-merge node)))))
+
+(defn merge-node
+  "This function deeply merges a node passed as the second argument into a root passed as a firts argument."
+  [root node]
+  (let [root-path (:path root)
+        node-path (:path node)
+        route-parts (and (route-part? root) (route-part? node))
+        i (if route-parts (path-overlap root-path node-path) -1)
+        identical-nodes (or (identical-parameters? root node) (and (> i 0) (= i (count root-path)) (= i (count node-path))))
+        new-root-path (if identical-nodes
+                        root-path
+                        (subs root-path 0 i))
+        new-root-tail (if (> i 0) (subs root-path i (count root-path)) root-path)
+        new-node-tail (if (> i 0) (subs node-path i (count node-path)) node-path)]
+        (create-route-node
+          new-root-path
+          ; creation of a new vector of following route paths
+          (cond
+            identical-nodes
+            (loop [[new-node & other-new-nodes] (:following node) result-nodes (:following root)]
+              (if (nil? new-node)
+                result-nodes
+                (add-node result-nodes new-node)))
+            (and (> i 0) (= i (count root-path)) (< i (count node-path)))
+            (add-node (:following root) (create-route-node new-node-tail (:following node)))
+            (and (> i 0) (< i (count root-path)))
+            [(create-route-node new-root-tail (:following root))
+             (create-route-node new-node-tail (:following node))]))))
 
 (defn build-default-configuration []
   {})
 
 (defn register-handler 
   ([route handler] (register-handler (build-default-configuration) route handler))
-  ([configuration route handler] (update configuration :static-routes (partial merge {route handler}))))
+  ([configuration route handler] 
+    (update 
+      configuration 
+      :routes 
+      (fn [root]
+        (let [parsed-route (parse-route route handler)]
+          (if (nil? root)
+            parsed-route
+            (merge-node root parsed-route)))))))
 
 (defn register-default-handler 
   ([handler] (register-default-handler (build-default-configuration) handler))
-  ([configuration handler] (register-handler configuration :default handler)))
+  ([configuration handler] (assoc configuration :default-handler handler)))
+
+(defmulti extract-regex-from-path :type)
+
+(defmethod extract-regex-from-path :terminator [node]
+  "$")
+
+(defmethod extract-regex-from-path :parameter [node]
+  "(.*?)")
+
+(defmethod extract-regex-from-path :route-part [route-node]
+  (:path route-node))
+
+(defmulti match-route (fn [uri route-node] (:type route-node)))
+
+(defmethod match-route :terminator [uri route-node]
+  route-node)
+
+(defmethod match-route :parameter [uri route-node]
+  (loop [[r & others] (:following route-node)]
+    (if (nil? r)
+      route-node
+      (let [matched-paths (re-matches (re-pattern (str "^" (extract-regex-from-path route-node) (extract-regex-from-path r) ".*")) uri)]
+        (if (< 1 (count matched-paths))
+          (assoc route-node :matched-value (second matched-paths))
+          (recur others))))))
+
+(defmethod match-route :route-part [^String uri route-node]
+  (let [^String path (:path route-node)]
+    (if (.startsWith uri path)
+      (assoc route-node :matched-value path)
+      route-node)))
+
+(defn process-uri
+  [uri matched-node]
+  (subs uri (count (:matched-value matched-node))))
+
+(defn find-handler
+  [routes uri]
+  (loop [uri (common/decode-url uri) nodes [routes] parameter-values []]
+    (let [first-node (first nodes)]
+      (if (and (terminator? first-node) (empty? uri))
+        (fn [context]
+          ((:handler first-node) ; handler function
+            (update-in
+              context
+              [:request :parameters]
+              #(merge % (zipmap (:parameters first-node) parameter-values))))) ; updating context with uri parameters
+        (if (and (seq uri) first-node)
+          (let [matched-node (first (filter matched? (map (partial match-route uri) nodes)))]
+            (if-not (nil? matched-node)
+              (recur
+                (process-uri uri matched-node)
+                (:following matched-node)
+                (if (parameter? matched-node) (conj parameter-values (:matched-value matched-node)) parameter-values)))))))))
 
 (defn build-router [configuration]
-  (fn [context] ((get-in configuration [:static-routes :default]) context)))
+  (fn [context]:following
+    ((or
+       (find-handler (:routes configuration) (get-in context [:request :uri]))
+       (:default-handler configuration))
+      context)))
+
+(defn print-route
+  [root]
+  (loop [nodes [root]]
+    (if (not (empty? nodes))
+      (do
+        (println (mapv :path nodes))
+        (recur (into [] (apply concat (mapv :following nodes))))))))

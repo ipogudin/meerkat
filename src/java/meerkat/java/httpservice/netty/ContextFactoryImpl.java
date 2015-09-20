@@ -31,6 +31,7 @@ public class ContextFactoryImpl implements ContextFactory {
 
   private static final Keyword PROTOCOL = Keyword.intern("protocol");
   private static final Keyword METHOD = Keyword.intern("method");
+  private static final Keyword URI = Keyword.intern("uri");
   private static final Keyword HEADERS = Keyword.intern("headers");
   private static final Keyword PARAMETERS = Keyword.intern("parameters");
   private static final Keyword BODY = Keyword.intern("body");
@@ -111,6 +112,7 @@ public class ContextFactoryImpl implements ContextFactory {
     Map<Keyword, Object> transformedRequest = new HashMap<>();
     transformedRequest.put(PROTOCOL, httpRequest.protocolVersion().text());
     transformedRequest.put(METHOD, Keyword.intern(httpRequest.method().name()));
+    transformedRequest.put(URI, httpRequest.uri());
     
     //transformation headers
     final Map<Keyword, String> headers = new HashMap<>();

@@ -18,6 +18,7 @@
 
 (defn http-service-fixture
   [f]
+  (test-common/clear-recorder)
   (binding 
     [*http-service-instance* (services/start 
                                (netty-http-service/create-http-service 

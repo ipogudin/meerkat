@@ -2,6 +2,7 @@
   (:require [clojure.string :as str]
             [clojure.tools.logging :as log]
             [meerkat.httpservice.core :refer :all]
+            [meerkat.common :as common]
             [meerkat.services :as services])
   (:import 
     [meerkat.java.httpservice.netty HttpServiceImpl]
@@ -11,8 +12,8 @@
   {
     :ssl false
     :port 8080
-    :acceptor-pool-size 8
-    :worker-pool-size 8
+    :acceptor-pool-size (common/get-available-processors)
+    :worker-pool-size (common/get-available-processors)
     :backlog 1024
     :read-timeout 10000
     :write-timeout 10000
@@ -21,7 +22,7 @@
     :max-chunk-size 8192})
 
 (defrecord NettyHttpService [name dependencies configuration netty-service]
-  meerkat.services.Service
+  Service
   (start [this]
     (let 
       [service

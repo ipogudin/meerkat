@@ -1,6 +1,6 @@
 (ns meerkat.httpservice.default-handler)
 
-(defn- respond [context response-body content-type]
+(defn respond [context response-body content-type]
   ((:write-and-flush context)
      (-> context
        (assoc-in [:response :body] response-body)

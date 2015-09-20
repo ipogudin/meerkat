@@ -10,5 +10,5 @@
   "Get one value from the global storage. It blocks during 1000ms to wait for a value."
   (.poll *recorded-values* 1000 java.util.concurrent.TimeUnit/MILLISECONDS))
 
-(defn clear [value]
+(defn clear-recorder []
   (.clear *recorded-values*))

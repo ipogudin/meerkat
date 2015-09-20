@@ -13,3 +13,6 @@ pom.xml.asc
 .classpath
 .project
 .settings
+#idea temporary files
+.idea
+*.iml

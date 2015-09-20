@@ -1,4 +1,5 @@
 (ns meerkat.core
+  (:gen-class)
   (:require [meerkat.httpservice.default-handler :as handlers]
             [meerkat.httpservice.routing :as routing]
             [meerkat.services :as services]
@@ -6,9 +7,36 @@
             [meerkat.httpservice.netty :as netty-http-service]
             [meerkat.httpservice.keepalive :refer [keep-alive-provider]]))
 
+(defn hello-handler [context]
+  (case (get-in context [:request :method])
+    :GET (let [response-body
+               (.getBytes
+                 (format "Hello %s, from meerkat!" (get-in context [:request :parameters :name]))
+                 "UTF-8")]
+           (handlers/respond context response-body "text/plain; charset=UTF-8"))
+    (let [response-body (.getBytes "Method not found" "UTF-8")]
+      (handlers/respond context response-body "text/plain; charset=UTF-8")))
+  ((:complete context)))
+
+(defn message-handler [context]
+  (case (get-in context [:request :method])
+    :GET (let [parameters (get-in context [:request :parameters])
+               response-body
+               (.getBytes
+                 (format "Hello %s, from meerkat!\n%s" (:name parameters) (:message parameters))
+                 "UTF-8")]
+           (handlers/respond context response-body "text/plain; charset=UTF-8"))
+    (let [response-body (.getBytes "Method not found" "UTF-8")]
+      (handlers/respond context response-body "text/plain; charset=UTF-8")))
+  ((:complete context)))
+
 (defn configure-routing []
   (->
     (routing/register-default-handler handlers/default-handler)
+    (routing/register-handler "/test/test1" hello-handler)
+    (routing/register-handler "/test/test1/test2" hello-handler)
+    (routing/register-handler "/hello/:name/greet" hello-handler)
+    (routing/register-handler "/hello/:name/message/:message/show" message-handler)
     (routing/build-router)))
 
 (defn start-http-service []
