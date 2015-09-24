@@ -2,11 +2,15 @@
 
 (defn respond [context response-body content-type]
   ((:write-and-flush context)
-     (-> context
-       (assoc-in [:response :body] response-body)
-       (assoc-in [:response :headers :content-type] content-type)
-       (assoc-in [:response :headers :content-length] (count response-body))
-       (assoc-in [:response :status] 200))))
+     (assoc
+       context
+       :response
+         {:body response-body
+          :headers (merge
+                     (get-in context [:response :headers])
+                     {:content-type content-type
+                      :content-length (count response-body)})
+          :status 200})))
 
 (defn default-handler [context]
   (case (get-in context [:request :method])

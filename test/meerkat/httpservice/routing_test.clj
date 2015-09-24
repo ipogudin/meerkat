@@ -79,7 +79,7 @@
      (let
        [routing-configuration (routing/register-default-handler test-common/record)
         router (routing/build-router routing-configuration)
-        context {:request {:uri "/test/uri"}}]
+        context {:request {:uri "/test/uri" :method :GET}}]
        (router context)
        (let [recorded-context (test-common/get-recorded)]
          (is (= context recorded-context)))))
@@ -87,10 +87,10 @@
      (let
        [routing-configuration 
         (-> (routing/register-default-handler (fn [_]))
-          (routing/register-handler "/test/uri" test-common/record)
-          (routing/register-handler "/test/something" (fn [_])))
+          (routing/register-handler :GET "/test/uri" test-common/record)
+          (routing/register-handler :GET "/test/something" (fn [_])))
         router (routing/build-router routing-configuration)
-        context {:request {:uri "/test/uri"}}]
+        context {:request {:uri "/test/uri" :method :GET}}]
        (router context)
        (let [recorded-context (test-common/get-recorded)]
          (is (= "/test/uri" (get-in recorded-context [:request :uri]))))))
@@ -98,10 +98,10 @@
     (let
       [routing-configuration
        (-> (routing/register-default-handler (fn [_]))
-           (routing/register-handler "/test/:param1/list" test-common/record)
-           (routing/register-handler "/test/:param1/info" (fn [_])))
+           (routing/register-handler :GET "/test/:param1/list" test-common/record)
+           (routing/register-handler :GET "/test/:param1/info" (fn [_])))
        router (routing/build-router routing-configuration)
-       context {:request {:uri "/test/entity1/list"}}]
+       context {:request {:uri "/test/entity1/list" :method :GET}}]
       (router context)
       (let [recorded-context (test-common/get-recorded)]
         (is (= "/test/entity1/list" (get-in recorded-context [:request :uri])))
@@ -110,12 +110,12 @@
     (let
       [routing-configuration
        (-> (routing/register-default-handler (fn [_]))
-           (routing/register-handler "/something/test1" (fn [_]))
-           (routing/register-handler "/something/test1/test2" (fn [_]))
-           (routing/register-handler "/test/:param1/list" (fn [_]))
-           (routing/register-handler "/test/:param1/details/:param2/info" test-common/record))
+           (routing/register-handler :GET "/something/test1" (fn [_]))
+           (routing/register-handler :GET "/something/test1/test2" (fn [_]))
+           (routing/register-handler :GET "/test/:param1/list" (fn [_]))
+           (routing/register-handler :GET "/test/:param1/details/:param2/info" test-common/record))
        router (routing/build-router routing-configuration)
-       context {:request {:uri "/test/entity1/details/entity2/info"}}]
+       context {:request {:uri "/test/entity1/details/entity2/info" :method :GET}}]
       (router context)
       (let [recorded-context (test-common/get-recorded)]
         (is (= "/test/entity1/details/entity2/info" (get-in recorded-context [:request :uri])))
@@ -124,10 +124,10 @@
     (let
       [routing-configuration
        (-> (routing/register-default-handler (fn [_]))
-           (routing/register-handler "/test/:param1/list" (fn [_]))
-           (routing/register-handler "/test/:param1/:param2/info" test-common/record))
+           (routing/register-handler :GET "/test/:param1/list" (fn [_]))
+           (routing/register-handler :GET "/test/:param1/:param2/info" test-common/record))
        router (routing/build-router routing-configuration)
-       context {:request {:uri "/test/entity1/entity2/info"}}]
+       context {:request {:uri "/test/entity1/entity2/info" :method :GET}}]
       (router context)
       (let [recorded-context (test-common/get-recorded)]
         (is (= "/test/entity1/entity2/info" (get-in recorded-context [:request :uri])))

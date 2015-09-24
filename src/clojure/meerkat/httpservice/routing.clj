@@ -121,15 +121,19 @@
             [(create-route-node new-root-tail (:following root))
              (create-route-node new-node-tail (:following node))]))))
 
+(defrecord CommonRoutingConfiguration [routes])
+
+(defrecord MethodRoutingConfiguration [GET HEAD POST PUT DELETE TRACE CONNECT])
+
 (defn build-default-configuration []
-  {})
+  (CommonRoutingConfiguration. (MethodRoutingConfiguration. nil nil nil nil nil nil nil)))
 
 (defn register-handler 
-  ([route handler] (register-handler (build-default-configuration) route handler))
-  ([configuration route handler] 
-    (update 
+  ([method route handler] (register-handler (build-default-configuration) method route handler))
+  ([configuration method route handler]
+    (update-in
       configuration 
-      :routes 
+      [:routes method]
       (fn [root]
         (let [parsed-route (parse-route route handler)]
           (if (nil? root)
@@ -171,33 +175,46 @@
       (assoc route-node :matched-value path)
       route-node)))
 
-(defn process-uri
-  [uri matched-node]
-  (subs uri (count (:matched-value matched-node))))
+(defn process-path
+  [path matched-node]
+  (subs path (count (:matched-value matched-node))))
+
+(defn find-matched-node
+  "This function matches a path to route nodes.
+  If there is proper route returns RouteNode else nil."
+  [path [node & nodes]]
+  (if (some? node)
+    (let [n (match-route path node)]
+      (if (matched? n) n (recur path nodes)))))
 
 (defn find-handler
-  [routes uri]
-  (loop [uri (common/decode-url uri) nodes [routes] parameter-values []]
+  "This function matches a uri against a root (a tree from RouteNode) to find a request handler."
+  [root path]
+  (loop [path (common/decode-url path) nodes [root] parameter-values []]
     (let [first-node (first nodes)]
-      (if (and (terminator? first-node) (empty? uri))
+      (if (and (terminator? first-node) (empty? path))
         (fn [context]
           ((:handler first-node) ; handler function
             (update-in
               context
               [:request :parameters]
               #(merge % (zipmap (:parameters first-node) parameter-values))))) ; updating context with uri parameters
-        (if (and (seq uri) first-node)
-          (let [matched-node (first (filter matched? (map (partial match-route uri) nodes)))]
+        (if (and (seq path) first-node)
+          (let [matched-node (find-matched-node path nodes)]
             (if-not (nil? matched-node)
               (recur
-                (process-uri uri matched-node)
+                (process-path path matched-node)
                 (:following matched-node)
                 (if (parameter? matched-node) (conj parameter-values (:matched-value matched-node)) parameter-values)))))))))
 
 (defn build-router [configuration]
   (fn [context]:following
     ((or
-       (find-handler (:routes configuration) (get-in context [:request :uri]))
+       (let [
+             {method :method uri :uri} (:request context)
+             i (.indexOf uri (int \?))
+             path (if (> i 0) (subs uri 0 i) uri)]
+         (find-handler (get-in configuration [:routes method]) path))
        (:default-handler configuration))
       context)))
 
