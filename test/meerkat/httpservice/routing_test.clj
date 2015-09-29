@@ -106,6 +106,18 @@
       (let [recorded-context (test-common/get-recorded)]
         (is (= "/test/entity1/list" (get-in recorded-context [:request :uri])))
         (is (= {:param1 "entity1"} (get-in recorded-context [:request :parameters]))))))
+  (testing "Appropriate handler must be invoked for particular uri with a parameter at the end."
+    (let
+      [routing-configuration
+       (-> (routing/register-default-handler (fn [_]))
+           (routing/register-handler :GET "/test/:param1" test-common/record)
+           (routing/register-handler :GET "/test/:param1/info" (fn [_])))
+       router (routing/build-router routing-configuration)
+       context {:request {:uri "/test/entity1" :method :GET}}]
+      (router context)
+      (let [recorded-context (test-common/get-recorded)]
+        (is (= "/test/entity1" (get-in recorded-context [:request :uri])))
+        (is (= {:param1 "entity1"} (get-in recorded-context [:request :parameters]))))))
   (testing "Appropriate handler must be invoked for particular uri with two parameters."
     (let
       [routing-configuration
