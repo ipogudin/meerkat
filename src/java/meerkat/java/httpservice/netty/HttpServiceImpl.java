@@ -28,7 +28,13 @@ public final class HttpServiceImpl {
     
     // Configure the server.
     acceptorGroup = new NioEventLoopGroup(configurator.acceptorPoolSize());
-    workerGroup = new NioEventLoopGroup(configurator.workerPoolSize());
+
+    if (configurator.workerPoolSize() > 0) {
+      workerGroup = new NioEventLoopGroup(configurator.workerPoolSize());
+    }
+    else {
+      workerGroup = acceptorGroup;
+    }
 
     ServerBootstrap b = new ServerBootstrap();
     b.option(ChannelOption.SO_BACKLOG, configurator.backlog());

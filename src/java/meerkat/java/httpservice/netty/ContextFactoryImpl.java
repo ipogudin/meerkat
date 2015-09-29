@@ -1,5 +1,6 @@
 package meerkat.java.httpservice.netty;
 
+import clojure.lang.*;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpMethod;
@@ -14,14 +15,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import meerkat.java.utils.APersistentMapUtils;
-import clojure.lang.AFn;
-import clojure.lang.APersistentMap;
-import clojure.lang.IPersistentMap;
-import clojure.lang.IPersistentVector;
-import clojure.lang.Keyword;
-import clojure.lang.PersistentArrayMap;
-import clojure.lang.PersistentHashMap;
-import clojure.lang.PersistentVector;
 
 public class ContextFactoryImpl implements ContextFactory {
 
@@ -126,8 +119,8 @@ public class ContextFactoryImpl implements ContextFactory {
             Keyword name = Keyword.intern(e.getKey());
                 parameters.put(name, PersistentVector.create(e.getValue()));
             });
-    
-    if (HttpMethod.POST.equals(httpRequest.method())) {
+
+    if (HttpMethod.POST.equals(httpRequest.method()) || HttpMethod.PUT.equals(httpRequest.method())) {
         String contentType = "";
         if (httpRequest.headers().contains(CONTENT_TYPE)) {
             contentType = httpRequest.headers().get(CONTENT_TYPE);

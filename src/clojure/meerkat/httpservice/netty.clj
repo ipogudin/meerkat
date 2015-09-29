@@ -13,7 +13,7 @@
     :ssl false
     :port 8080
     :acceptor-pool-size (common/get-available-processors)
-    :worker-pool-size (common/get-available-processors)
+    :worker-pool-size 0 ;if this value is 0 then the only acceptor-pool will be used
     :backlog 1024
     :read-timeout 10000
     :write-timeout 10000

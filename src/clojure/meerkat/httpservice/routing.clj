@@ -1,6 +1,8 @@
 (ns meerkat.httpservice.routing
   (:require [meerkat.common :as common]))
 
+(set! *warn-on-reflection* true)
+
 (defrecord RouteNode [type path following parameters handler matched-value])
 
 (defn analyze-node-type
@@ -81,7 +83,7 @@
       (and
         (instance? String node1-path)
         (instance? String node2-path)
-        (.startsWith node1-path node2-path)))))
+        (.startsWith ^String node1-path ^String node2-path)))))
 
 (declare merge-node)
 
@@ -144,29 +146,34 @@
   ([handler] (register-default-handler (build-default-configuration) handler))
   ([configuration handler] (assoc configuration :default-handler handler)))
 
-(defmulti extract-regex-from-path :type)
-
-(defmethod extract-regex-from-path :terminator [node]
-  "$")
-
-(defmethod extract-regex-from-path :parameter [node]
-  "(.*?)")
-
-(defmethod extract-regex-from-path :route-part [route-node]
-  (:path route-node))
-
 (defmulti match-route (fn [uri route-node] (:type route-node)))
 
 (defmethod match-route :terminator [uri route-node]
   route-node)
 
+(defn match-parameter [node1 node2 ^String uri]
+  (if (terminator? node2)
+    uri
+    (let [^String s2 (:path node2)
+          n2 (count s2)
+          n (count uri)]
+      (loop [i2 0 i 0]
+        (if (and (< i n) (< i2 n2))
+          (let [c (.charAt uri i)
+                c2 (.charAt s2 i2)]
+            (if (= c c2)
+              (if (= (inc i2) n2)
+                (subs uri 0 (- i i2))
+                (recur (inc i2) (inc i)))
+              (recur 0 (inc i)))))))))
+
 (defmethod match-route :parameter [uri route-node]
   (loop [[r & others] (:following route-node)]
     (if (nil? r)
       route-node
-      (let [matched-paths (re-matches (re-pattern (str "^" (extract-regex-from-path route-node) (extract-regex-from-path r) ".*")) uri)]
-        (if (< 1 (count matched-paths))
-          (assoc route-node :matched-value (second matched-paths))
+      (let [matched-path (match-parameter route-node r uri)]
+        (if (some? matched-path)
+          (assoc route-node :matched-value matched-path)
           (recur others))))))
 
 (defmethod match-route :route-part [^String uri route-node]
@@ -190,7 +197,7 @@
 (defn find-handler
   "This function matches a uri against a root (a tree from RouteNode) to find a request handler."
   [root path]
-  (loop [path (common/decode-url path) nodes [root] parameter-values []]
+  (loop [path (common/decode-url path) nodes [root] parameter-values (transient [])]
     (let [first-node (first nodes)]
       (if (and (terminator? first-node) (empty? path))
         (fn [context]
@@ -198,20 +205,20 @@
             (update-in
               context
               [:request :parameters]
-              #(merge % (zipmap (:parameters first-node) parameter-values))))) ; updating context with uri parameters
+              #(merge % (zipmap (:parameters first-node) (persistent! parameter-values)))))) ; updating context with uri parameters
         (if (and (seq path) first-node)
           (let [matched-node (find-matched-node path nodes)]
             (if-not (nil? matched-node)
               (recur
                 (process-path path matched-node)
                 (:following matched-node)
-                (if (parameter? matched-node) (conj parameter-values (:matched-value matched-node)) parameter-values)))))))))
+                (if (parameter? matched-node) (conj! parameter-values (:matched-value matched-node)) parameter-values)))))))))
 
 (defn build-router [configuration]
   (fn [context]:following
     ((or
        (let [
-             {method :method uri :uri} (:request context)
+             {method :method ^String uri :uri} (:request context)
              i (.indexOf uri (int \?))
              path (if (> i 0) (subs uri 0 i) uri)]
          (find-handler (get-in configuration [:routes method]) path))

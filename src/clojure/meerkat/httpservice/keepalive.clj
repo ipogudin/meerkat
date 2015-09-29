@@ -6,7 +6,6 @@
   [context timeout-header-value]
   (log/trace "keep-alive processing")
   (let [
-        response (:response context)
         protocol (get-in context [:request :protocol])
         connection-header (str/lower-case (or (get-in context [:request :headers :connection]) ""))]
     (cond

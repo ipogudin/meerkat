@@ -35,7 +35,9 @@
 
 (defn start-http-service []
   (let [service (services/start (netty-http-service/create-http-service "http-service" [] {}))]
-    (http-service/set-router service (keep-alive-provider (configure-routing) (:read-timeout (deref (:configuration service)))))
+    (http-service/set-router
+      service
+      (keep-alive-provider (configure-routing) (:read-timeout (deref (:configuration service)))))
     service))
 
 (defn stop-http-service [service]
