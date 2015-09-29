@@ -16,6 +16,6 @@
                  [org.apache.httpcomponents/httpclient "4.5"]
                  [org.apache.httpcomponents/httpmime "4.5"]
                  [org.javassist/javassist "3.19.0-GA"]]
-  :profiles {:performance-tests 
-             {:main meerkat.core
+  :profiles {:performance
+             {:main meerkat.examples.rest
               :jvm-opts ["-Xms512m" "-Xmx512m" "-XX:+UseG1GC" "-XX:+UseCompressedOops" "-XX:+UnlockCommercialFeatures" "-XX:+FlightRecorder"]}})
