@@ -1,11 +1,17 @@
 (ns meerkat.services
   (:require [clojure.set])
-  (:use [slingshot.slingshot :only [throw+ try+]]))
+  (:use [slingshot.slingshot :only [throw+ try+]])
+  (:import (clojure.lang Atom)))
 
 (defprotocol Service
   (configure [this new-configuration] "Configure service. To apply coniguration you should stop and start service.")
   (start [this] "start service")
   (stop [this] "stop service"))
+
+(defn configure-service
+  [service ^Atom configuration new-configuration]
+  (swap! configuration (fn [_] new-configuration))
+  service)
 
 (defn- set-max-iterations
   "Set maximum iterations for topological sorting"

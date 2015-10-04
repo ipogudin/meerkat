@@ -4,13 +4,14 @@
   (:import [meerkat.services Service]))
 
 (defrecord TestService [name dependencies configuration]
-  meerkat.services.Service
-  (configure [this new-configuration] (swap! configuration (fn [_] new-configuration)))
-  (start [this] "start service" (println "start"))
-  (stop [this] "stop service" (println "stop")))
+  Service
+  (configure [this new-configuration]
+    (meerkat.services/configure-service this configuration new-configuration))
+  (start [_] "start service" (println "start"))
+  (stop [_] "stop service" (println "stop")))
 
 (defn- create-service [{name :name dependencies :dependencies configuration :configuration}] 
-  (TestService. name dependencies (atom configuration)))
+  (->TestService name dependencies (atom configuration)))
 
 (deftest sorting-services-according-to-dependencies
   (testing "All services should be sorted according to dependencies"
@@ -112,29 +113,32 @@
       (is (thrown? Throwable (services/sort-services declared-services))))))
 
 (defrecord TestService1 [name dependencies configuration started]
-  meerkat.services.Service
-  (configure [this new-configuration] (swap! configuration (fn [_] new-configuration)))
-  (start [this] "start service" (reset! started true))
-  (stop [this] "stop service" (reset! started false)))
+  Service
+  (configure [this new-configuration]
+    (meerkat.services/configure-service this configuration new-configuration))
+  (start [_] "start service" (reset! started true))
+  (stop [_] "stop service" (reset! started false)))
 
 (defrecord TestService2 [name dependencies configuration started test-service1]
-  meerkat.services.Service
-  (configure [this new-configuration] (swap! configuration (fn [_] new-configuration)))
-  (start [this] "start service" (reset! started true))
-  (stop [this] "stop service" (reset! started false)))
+  Service
+  (configure [this new-configuration]
+    (meerkat.services/configure-service this configuration new-configuration))
+  (start [_] "start service" (reset! started true))
+  (stop [_] "stop service" (reset! started false)))
 
 (defrecord TestService3 [name dependencies configuration started test-service1 test-service2]
-  meerkat.services.Service
-  (configure [this new-configuration] (swap! configuration (fn [_] new-configuration)))
-  (start [this] "start service" (reset! started true))
-  (stop [this] "stop service" (reset! started false)))
+  Service
+  (configure [this new-configuration]
+    (meerkat.services/configure-service this configuration new-configuration))
+  (start [_] "start service" (reset! started true))
+  (stop [_] "stop service" (reset! started false)))
 
 (deftest injecting-dependencies
   (testing "All declared dependencies should be injected"
     (let [
-          test-service1 (TestService1. :test-service1 [] (atom {}) (atom false))
-          test-service2 (TestService1. :test-service2 [:test-service1] (atom {}) (atom false))
-          test-service3 (TestService1. :test-service3 [:test-service1 :test-service2] (atom {}) (atom false))
+          test-service1 (->TestService1 :test-service1 [] (atom {}) (atom false))
+          test-service2 (->TestService2 :test-service2 [:test-service1] (atom {}) (atom false) nil)
+          test-service3 (->TestService3 :test-service3 [:test-service1 :test-service2] (atom {}) (atom false) nil nil)
           services-with-dependencies (services/inject-dependencies (services/sort-services [test-service1 test-service2 test-service3]))
           test-service2-with-dependencies (nth services-with-dependencies 1)
           test-service3-with-dependencies (nth services-with-dependencies 2)]
@@ -146,9 +150,9 @@
 (deftest service-lifecycle
   (testing "Starting services"
     (let [
-          test-service1 (TestService1. :test-service1 [] (atom {}) (atom false))
-          test-service2 (TestService1. :test-service2 [] (atom {}) (atom false))
-          test-service3 (TestService1. :test-service3 [] (atom {}) (atom false))
+          test-service1 (->TestService1 :test-service1 [] (atom {}) (atom false))
+          test-service2 (->TestService2 :test-service2 [] (atom {}) (atom false) nil)
+          test-service3 (->TestService3 :test-service3 [] (atom {}) (atom false) nil nil)
           services (services/start-all [test-service1 test-service2 test-service3])
           ]
       (is (deref (:started test-service1)))
@@ -156,9 +160,9 @@
       (is (deref (:started test-service3)))))
   (testing "Stopping services"
     (let [
-          test-service1 (TestService1. :test-service1 [] (atom {}) (atom true))
-          test-service2 (TestService1. :test-service2 [] (atom {}) (atom true))
-          test-service3 (TestService1. :test-service3 [] (atom {}) (atom true))
+          test-service1 (->TestService1 :test-service1 [] (atom {}) (atom true))
+          test-service2 (->TestService2 :test-service2 [] (atom {}) (atom true) nil)
+          test-service3 (->TestService3 :test-service3 [] (atom {}) (atom true) nil nil)
           services (services/stop-all [test-service1 test-service2 test-service3])
           ]
       (is (not (deref (:started test-service1))))
@@ -166,9 +170,9 @@
       (is (not (deref (:started test-service3))))))
   (testing "Configuring services"
     (let [
-          test-service1 (TestService1. :test-service1 [] (atom {}) (atom true))
-          test-service2 (TestService1. :test-service2 [] (atom {}) (atom true))
-          test-service3 (TestService1. :test-service3 [] (atom {}) (atom true))
+          test-service1 (->TestService1 :test-service1 [] (atom {}) (atom true))
+          test-service2 (->TestService2 :test-service2 [] (atom {}) (atom true) nil)
+          test-service3 (->TestService3 :test-service3 [] (atom {}) (atom true) nil nil)
           services (services/configure-all 
                      [test-service1 test-service2 test-service3] 
                      {:test-service1 {:value 1} 
