@@ -24,24 +24,26 @@
     (handlers/respond context response-body "text/plain; charset=UTF-8"))
   ((:complete context)))
 
-(defn configure-routing []
+(def default-routes-configuration
   (->
     (routing/register-default-handler handlers/default-handler)
     (routing/register-handler :GET "/test/test1" hello-handler)
     (routing/register-handler :GET "/test/test1/test2" hello-handler)
     (routing/register-handler :GET "/hello/:name/greet" hello-handler)
-    (routing/register-handler :GET "/hello/:name/message/:message/show" message-handler)
-    (routing/build-router)))
+    (routing/register-handler :GET "/hello/:name/message/:message/show" message-handler)))
 
-(defn start-http-service []
+(defn configure-routing [configuration]
+  (routing/build-router configuration))
+
+(defn start-http-service [router]
   (let [service (services/start (netty-http-service/create-http-service "http-service" [] {}))]
     (http-service/set-router
       service
-      (keep-alive-provider (configure-routing) (:read-timeout (deref (:configuration service)))))
+      (keep-alive-provider router (:read-timeout (deref (:configuration service)))))
     service))
 
 (defn stop-http-service [service]
   (services/stop service))
 
 (defn -main [& args]
-  (start-http-service))
+  (start-http-service (configure-routing default-routes-configuration)))
