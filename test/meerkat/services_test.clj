@@ -1,12 +1,12 @@
 (ns meerkat.services_test
   (:require [clojure.test :refer :all]
-            [meerkat.services :as services])
+            [meerkat.services :as s])
   (:import [meerkat.services Service]))
 
 (defrecord TestService [name dependencies configuration]
   Service
   (configure [this new-configuration]
-    (meerkat.services/configure-service this configuration new-configuration))
+    (s/configure-service this configuration new-configuration))
   (start [_] "start service" (println "start"))
   (stop [_] "stop service" (println "stop")))
 
@@ -53,7 +53,7 @@
             dao-service
             event-service
             db-service]
-          sorted-services (services/sort-services declared-services)]
+          sorted-services (s/sort-services declared-services)]
       (is (= [configuration-service http-service event-service db-service dao-service pipeline-service] sorted-services))))
   (testing "Exception should be thrown if there are unsatisfied dependencies"
     (let [
@@ -70,7 +70,7 @@
           declared-services
             [pipeline-service
             configuration-service]]
-      (is (thrown? Throwable (services/sort-services declared-services)))))
+      (is (thrown? Throwable (s/sort-services declared-services)))))
   (testing "Exception should be thrown if there is a cycle in dependencies"
     (let [
           pipeline-service 
@@ -110,26 +110,26 @@
             dao-service
             event-service
             db-service]]
-      (is (thrown? Throwable (services/sort-services declared-services))))))
+      (is (thrown? Throwable (s/sort-services declared-services))))))
 
 (defrecord TestService1 [name dependencies configuration started]
   Service
   (configure [this new-configuration]
-    (meerkat.services/configure-service this configuration new-configuration))
+    (s/configure-service this configuration new-configuration))
   (start [_] "start service" (reset! started true))
   (stop [_] "stop service" (reset! started false)))
 
 (defrecord TestService2 [name dependencies configuration started test-service1]
   Service
   (configure [this new-configuration]
-    (meerkat.services/configure-service this configuration new-configuration))
+    (s/configure-service this configuration new-configuration))
   (start [_] "start service" (reset! started true))
   (stop [_] "stop service" (reset! started false)))
 
 (defrecord TestService3 [name dependencies configuration started test-service1 test-service2]
   Service
   (configure [this new-configuration]
-    (meerkat.services/configure-service this configuration new-configuration))
+    (s/configure-service this configuration new-configuration))
   (start [_] "start service" (reset! started true))
   (stop [_] "stop service" (reset! started false)))
 
@@ -139,7 +139,7 @@
           test-service1 (->TestService1 :test-service1 [] (atom {}) (atom false))
           test-service2 (->TestService2 :test-service2 [:test-service1] (atom {}) (atom false) nil)
           test-service3 (->TestService3 :test-service3 [:test-service1 :test-service2] (atom {}) (atom false) nil nil)
-          services-with-dependencies (services/inject-dependencies (services/sort-services [test-service1 test-service2 test-service3]))
+          services-with-dependencies (s/inject-dependencies (s/sort-services [test-service1 test-service2 test-service3]))
           test-service2-with-dependencies (nth services-with-dependencies 1)
           test-service3-with-dependencies (nth services-with-dependencies 2)]
       (is (= :test-service1 (-> test-service2-with-dependencies :test-service1 :name)))
@@ -153,7 +153,7 @@
           test-service1 (->TestService1 :test-service1 [] (atom {}) (atom false))
           test-service2 (->TestService2 :test-service2 [] (atom {}) (atom false) nil)
           test-service3 (->TestService3 :test-service3 [] (atom {}) (atom false) nil nil)
-          services (services/start-all [test-service1 test-service2 test-service3])
+          services (s/start-all [test-service1 test-service2 test-service3])
           ]
       (is (deref (:started test-service1)))
       (is (deref (:started test-service2)))
@@ -163,7 +163,7 @@
           test-service1 (->TestService1 :test-service1 [] (atom {}) (atom true))
           test-service2 (->TestService2 :test-service2 [] (atom {}) (atom true) nil)
           test-service3 (->TestService3 :test-service3 [] (atom {}) (atom true) nil nil)
-          services (services/stop-all [test-service1 test-service2 test-service3])
+          services (s/stop-all [test-service1 test-service2 test-service3])
           ]
       (is (not (deref (:started test-service1))))
       (is (not (deref (:started test-service2))))
@@ -173,7 +173,7 @@
           test-service1 (->TestService1 :test-service1 [] (atom {}) (atom true))
           test-service2 (->TestService2 :test-service2 [] (atom {}) (atom true) nil)
           test-service3 (->TestService3 :test-service3 [] (atom {}) (atom true) nil nil)
-          services (services/configure-all 
+          services (s/configure-all
                      [test-service1 test-service2 test-service3] 
                      {:test-service1 {:value 1} 
                       :test-service2 {:value 2}})
