@@ -2,7 +2,7 @@
   ;  (:require )
   (:use [slingshot.slingshot :only [throw+ try+]])
   (:import [java.util.concurrent CompletableFuture Executor]
-          [meerkat.java.pipeline Step]))
+          [meerkat.java.pipeline Step SerialFork ParallelFork]))
 
 (defmacro error?
   "Does this context contain an error?"
@@ -29,6 +29,14 @@
   [f pass-if-error]
   (Step. (wrap-step-function f pass-if-error)))
 
+(defn serial-fork
+  [steps reducer]
+  (SerialFork. steps reducer))
+
+(defn parallel-fork
+  ([steps reducer] (ParallelFork. steps reducer))
+  ([steps reducer executor] (ParallelFork. steps reducer executor)))
+
 (defn initiate-pipeline
   []
   (CompletableFuture.))
@@ -47,6 +55,39 @@
   [^CompletableFuture pipeline ^Step context]
   (.complete pipeline context))
 
+(defn- encode-step
+  [s]
+  (let [sd (apply hash-map s)
+        {:keys [f pass-if-error] :or {pass-if-error true}} sd]
+    `(step ~f ~pass-if-error)))
+
+(defn- encode-joint
+  [s]
+  (let [sd (apply hash-map s)
+        {:keys [fork steps reducer async executor] :or {async false}} sd]
+    (cond
+      (= fork :serial)
+      (if async
+        (if (nil? executor)
+          `(add-async-step (serial-fork ~(mapv encode-step steps) ~reducer))
+          `(add-async-step (serial-fork ~(mapv encode-step steps) ~reducer) ~executor))
+        `(add-step (serial-fork ~(mapv encode-step steps) ~reducer)))
+      (= fork :parallel)
+      (if async
+        (if (nil? executor)
+          `(add-async-step (parallel-fork ~(mapv encode-step steps) ~reducer))
+          `(add-async-step (parallel-fork ~(mapv encode-step steps) ~reducer ~executor) ~executor))
+        (if (nil? executor)
+          `(add-step (parallel-fork ~(mapv encode-step steps) ~reducer))
+          `(add-step (parallel-fork ~(mapv encode-step steps) ~reducer ~executor))))
+      :else
+      (let [{:keys [async executor] :or {async false}} sd]
+        (if async
+          (if (nil? executor)
+            `(add-async-step ~(encode-step s))
+            `(add-async-step ~(encode-step s) ~executor))
+          `(add-step ~(encode-step s)))))))
+
 (defmacro pipeline
   "This macro creates pipeline and
   returns a function which run context execution in just created pipeline.
@@ -55,13 +96,5 @@
   `(fn [context#]
      (let [p# (initiate-pipeline)]
        (-> p#
-           ~@(map
-              (fn [s]
-                (let [{:keys [f async executor pass-if-error] :or {async false pass-if-error true}} (apply hash-map s)]
-                  (if async
-                    (if (nil? executor)
-                      `(add-async-step (step ~f ~pass-if-error))
-                      `(add-async-step (step ~f ~pass-if-error) ~executor))
-                    `(add-step (step ~f ~pass-if-error)))))
-              steps))
+           ~@(map encode-joint steps))
        (run-pipeline p# context#))))

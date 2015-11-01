@@ -83,4 +83,40 @@
           pipeline-run (pipeline {})
           recorded-context (test-common/get-recorded)]
       (is pipeline-run)
-      (is (= :passed (:s1 recorded-context))))))
+      (is (= :passed (:s1 recorded-context)))))
+  (testing "asynchronous steps"
+    (let [pipeline (p/pipeline
+                     [:f step1 :async true]
+                     [:f final-step :async true :pass-if-error false])
+          pipeline-run (pipeline {})
+          recorded-context (test-common/get-recorded)]
+      (is pipeline-run)
+      (is (= :passed (:s1 recorded-context)))))
+  (testing "serial fork"
+    (let [pipeline (p/pipeline
+                     [:fork :serial :steps [[:f step1] [:f step2]] :reducer merge]
+                     [:f final-step :pass-if-error false])
+          pipeline-run (pipeline {})
+          recorded-context (test-common/get-recorded)]
+      (is pipeline-run)
+      (is (= :passed (:s1 recorded-context)))
+      (is (= :passed (:s2 recorded-context)))))
+  (testing "parallel fork"
+    (let [pipeline (p/pipeline
+                     [:fork :parallel :steps [[:f step1] [:f step2]] :reducer merge]
+                     [:f final-step :pass-if-error false])
+          pipeline-run (pipeline {})
+          recorded-context (test-common/get-recorded)]
+      (is pipeline-run)
+      (is (= :passed (:s1 recorded-context)))
+      (is (= :passed (:s2 recorded-context)))))
+  (testing "parallel fork with executor"
+    (let [executor (Executors/newFixedThreadPool 5)
+          pipeline (p/pipeline
+                     [:fork :parallel :steps [[:f step1] [:f step2]] :executor executor :reducer merge]
+                     [:f final-step :pass-if-error false])
+          pipeline-run (pipeline {})
+          recorded-context (test-common/get-recorded)]
+      (is pipeline-run)
+      (is (= :passed (:s1 recorded-context)))
+      (is (= :passed (:s2 recorded-context))))))

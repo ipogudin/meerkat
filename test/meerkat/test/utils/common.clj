@@ -1,6 +1,7 @@
-(ns meerkat.test.utils.common)
+(ns meerkat.test.utils.common
+  (:import [java.util.concurrent LinkedBlockingQueue]))
 
-(def ^:dynamic *recorded-values* (java.util.concurrent.LinkedBlockingQueue.))
+(def ^:dynamic *recorded-values* (LinkedBlockingQueue.))
 
 (defn record [value]
   "Record value in the global storage"

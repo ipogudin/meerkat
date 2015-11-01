@@ -9,8 +9,7 @@
 (defn final-step [context complete]
   (let [response-body
         (.getBytes
-          ;(str context)
-          "pipeline"
+          (str context)
           "UTF-8")]
     (handlers/respond context response-body "text/plain; charset=UTF-8"))
   ((:complete context)))
@@ -23,8 +22,7 @@
 
 (def pp
   (p/pipeline
-    [:f s1]
-    [:f s2 :async true]
+    [:fork :parallel :steps [[:f s1] [:f s2]] :reducer merge]
     [:f final-step :pass-if-error true]))
 
 (def routes-configuration
