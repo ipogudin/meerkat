@@ -1,8 +1,6 @@
 package meerkat.java.pipeline;
 
 import clojure.lang.IFn;
-import clojure.lang.PersistentList;
-import clojure.lang.PersistentVector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,7 +12,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 /**
- * Created by ipogudin on 10/26/15.
+ * This class represents a fork step which completes when all steps have completed.
+ * Steps are run in parallel flow.
  */
 public class ParallelFork implements Function<Object, CompletableFuture<Object>> {
 

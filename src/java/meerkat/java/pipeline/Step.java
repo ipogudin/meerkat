@@ -8,6 +8,9 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
+/**
+ * This class represents a smallest step in processing pipeline.
+ */
 public class Step implements Function<Object, CompletableFuture<Object>> {
 
   private final Logger logger = LoggerFactory.getLogger(Step.class);

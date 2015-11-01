@@ -9,7 +9,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 /**
- * Created by ipogudin on 10/26/15.
+ * This class represents a fork step which completes when all steps have completed.
+ * Steps are combined into serial flow.
  */
 public class SerialFork implements Function<Object, CompletableFuture<Object>> {
 
