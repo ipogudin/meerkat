@@ -2,7 +2,7 @@
   (:require [clojure.string :as str]
             [clojure.tools.logging :as log]
             [meerkat.httpservice.core :refer :all]
-            [meerkat.common :as common]
+            [meerkat.tools.common :as common]
             [meerkat.services :as services])
   (:import 
     [meerkat.java.httpservice.netty HttpServiceImpl]

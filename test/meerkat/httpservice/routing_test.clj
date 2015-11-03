@@ -1,6 +1,6 @@
 (ns meerkat.httpservice.routing-test
   (:require [clojure.test :refer :all]
-            [meerkat.test.utils.common :as test-common]
+            [meerkat.test.tools.common :as test-common]
             [meerkat.httpservice.routing :as routing]))
 
 (defn fixture

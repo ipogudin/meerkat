@@ -1,4 +1,4 @@
-(ns meerkat.test.utils.sockets
+(ns meerkat.test.tools.sockets
   (:import [java.net Socket InetSocketAddress SocketTimeoutException]
            [java.io BufferedOutputStream BufferedWriter OutputStreamWriter])
   (:use [slingshot.slingshot :only [throw+ try+]]))

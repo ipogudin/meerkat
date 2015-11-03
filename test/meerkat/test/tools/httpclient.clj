@@ -1,4 +1,4 @@
-(ns meerkat.test.utils.httpclient
+(ns meerkat.test.tools.httpclient
   (:import [org.apache.http.entity ContentType]
            [org.apache.http.util EntityUtils]
            [org.apache.http.impl.client HttpClients]

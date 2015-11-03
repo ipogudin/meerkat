@@ -1,5 +1,5 @@
 (ns meerkat.httpservice.routing
-  (:require [meerkat.common :as common]))
+  (:require [meerkat.tools.common :as common]))
 
 (set! *warn-on-reflection* true)
 

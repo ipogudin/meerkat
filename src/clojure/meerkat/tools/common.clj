@@ -1,4 +1,4 @@
-(ns meerkat.common
+(ns meerkat.tools.common
   (:import [java.net URLDecoder]))
 
 (defn decode-url

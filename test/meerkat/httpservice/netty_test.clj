@@ -1,12 +1,12 @@
 (ns meerkat.httpservice.netty-test
   (:require [clojure.test :refer :all]
-            [meerkat.test.utils.common :as test-common]
-            [meerkat.test.utils.sockets :as sockets]
+            [meerkat.test.tools.common :as test-common]
+            [meerkat.test.tools.sockets :as sockets]
             [meerkat.services :as services]
             [meerkat.httpservice.core :as http-service]
             [meerkat.httpservice.netty :as netty-http-service]
             [meerkat.httpservice.keepalive :refer [keep-alive-provider]]
-            [meerkat.test.utils.httpclient :as test-http-client]
+            [meerkat.test.tools.httpclient :as test-http-client]
             [meerkat.httpservice.default-handler :as handlers]
             [meerkat.httpservice.routing :as routing]))
 

@@ -1,6 +1,6 @@
 (ns meerkat.pipeline-test
   (:require [clojure.test :refer :all]
-            [meerkat.test.utils.common :as test-common]
+            [meerkat.test.tools.common :as test-common]
             [meerkat.pipeline :as p])
   (:use [slingshot.slingshot :only [throw+ try+]])
   (:import [java.util.concurrent Executors]))

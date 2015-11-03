@@ -1,4 +1,4 @@
-(ns meerkat.test.utils.common
+(ns meerkat.test.tools.common
   (:import [java.util.concurrent LinkedBlockingQueue]))
 
 (def ^:dynamic *recorded-values* (LinkedBlockingQueue.))
