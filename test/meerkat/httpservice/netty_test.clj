@@ -20,11 +20,11 @@
   [f]
   (test-common/clear-recorder)
   (binding 
-    [*http-service-instance* (services/start 
-                               (netty-http-service/create-http-service 
-                                 "http-service" 
-                                 [] 
-                                 {:port *port* :read-timeout *keep-alive-timeout*}))
+    [*http-service-instance* (-> (netty-http-service/create-http-service
+                                   "http-service"
+                                   [])
+                                 (services/configure {:port *port* :read-timeout *keep-alive-timeout*})
+                                 (services/start))
      *http-client-instance* (test-http-client/start)]
     ;configuring routing and setting default handler
     (http-service/set-router 

@@ -37,20 +37,22 @@
             (.stop old-netty-service))
           service))
       this))
-  (stop [_]
+  (stop [this]
     (.stop @netty-service)
-    (log/info "http-service just stopped"))
-  (configure [_ new-configuration]
-    (reset! configuration new-configuration))
+    (log/info "http-service just stopped")
+    this)
+  (configure [this new-configuration]
+    (swap! configuration #(merge % new-configuration))
+    this)
   HttpService
   (set-router [this router]
     (.setRouter @netty-service router)
     this))
 
 (defn create-http-service
-  [name dependencies configuration]
+  [name dependencies]
   (->NettyHttpService
     name 
     dependencies 
-    (atom (merge *default-configuration* configuration)) 
+    (atom *default-configuration*)
     (atom nil)))

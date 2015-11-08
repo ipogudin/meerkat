@@ -10,7 +10,7 @@
   (test-common/clear-recorder)
   (f))
 
-(use-fixtures :once fixture)
+(use-fixtures :each fixture)
 
 (defn step1
   [context complete]
