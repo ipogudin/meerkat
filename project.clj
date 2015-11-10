@@ -14,7 +14,8 @@
                  [io.netty/netty-handler "4.1.0.Beta6"]
                  [org.apache.httpcomponents/httpclient "4.5"]
                  [org.apache.httpcomponents/httpmime "4.5"]
-                 [org.javassist/javassist "3.19.0-GA"]]
+                 [org.javassist/javassist "3.19.0-GA"]
+                 [org.clojure/core.memoize "0.5.8"]]
   :aot [meerkat.tools.file]
   :profiles {:performance
              {:main meerkat.examples.rest
